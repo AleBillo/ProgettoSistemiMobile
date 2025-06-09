@@ -287,7 +287,7 @@ fun SettingsScreen(
                     } else if (currentQuoteString != null) {
                         Text("\"$currentQuoteString\"")
                     } else if (quoteError != null) {
-                        Text("I don't know anything about rock, paper or scissors: $quoteError")
+                        Text("$quoteError")
                     } else {
                         Text("Brought to you by PinguSoftware.")
                     }

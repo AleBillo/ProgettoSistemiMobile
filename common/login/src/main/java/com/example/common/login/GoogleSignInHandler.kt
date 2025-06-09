@@ -25,7 +25,7 @@ class GoogleSignInHandler(
 ) {
 
     private val credentialManager = CredentialManager.create(context)
-    private val webClientId: String = context.getString(R.string.google_web_client_id_modern)
+    private val webClientId: String = context.getString(R.string.google_android_client_id)
 
 
     private fun buildGoogleIdOption(filterByAuthorizedAccounts: Boolean, nonce: String? = null): GetGoogleIdOption {
