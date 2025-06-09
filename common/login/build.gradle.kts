@@ -41,7 +41,7 @@ dependencies {
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
 
-    implementation("androidx.credentials:credentials:1.6.0-alpha02")
-    implementation("androidx.credentials:credentials-play-services-auth:1.6.0-alpha02")
-    implementation ("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation (libs.googleid)
 }

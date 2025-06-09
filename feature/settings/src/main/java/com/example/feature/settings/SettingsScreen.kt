@@ -1,7 +1,6 @@
 package com.example.feature.settings
 
 import android.app.Activity
-import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -32,8 +31,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.example.common.api.RetrofitClient
 import com.example.common.login.GoogleSignInHandler
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(
@@ -50,17 +51,20 @@ fun SettingsScreen(
             context = context,
             coroutineScope = coroutineScope,
             onSignInSuccess = { credential ->
-                Log.d("SettingsScreenLogin", "Sign-in success: Email: ${credential.id}, Name: ${credential.displayName}")
                 currentGoogleUser = credential
             },
-            onSignInFailure = { exception ->
-                Log.e("SettingsScreenLogin", "Sign-in failure", exception)
+            onSignInFailure = {
                 currentGoogleUser = null
             }
         )
     }
 
     var showAboutDialog by remember { mutableStateOf(false) }
+    var currentQuoteString by remember { mutableStateOf<String?>(null) }
+    var isLoadingQuote by remember { mutableStateOf(false) }
+    var quoteError by remember { mutableStateOf<String?>(null) }
+
+    val quoteKeywords = listOf("rock", "paper", "scissors")
 
     Column(
         modifier = modifier
@@ -81,9 +85,6 @@ fun SettingsScreen(
                 if (currentGoogleUser == null) {
                     if (context is Activity) {
                         signInHelper.signIn()
-                    } else {
-                        Log.e("SettingsScreen", "Context is not an Activity, cannot start sign-in")
-
                     }
                 } else {
                     signInHelper.signOut()
@@ -103,9 +104,42 @@ fun SettingsScreen(
         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
         SettingsListItem(
-            title = "About",
+            title = "Learn to play",
             icon = Icons.Filled.Info,
-            onClick = { showAboutDialog = true }
+            onClick = {
+                isLoadingQuote = true
+                quoteError = null
+                currentQuoteString = null
+                coroutineScope.launch {
+                    try {
+                        val randomKeyword = quoteKeywords.random()
+                        val prompt = "generate 1 quote about $randomKeyword"
+
+                        val response = RetrofitClient.jsonGptApi.getQuote(prompt = prompt)
+
+                        if (response.isSuccessful) {
+                            val responseBody = response.body()
+                            if (responseBody != null) {
+                                val quotesList = responseBody.quotes
+                                if (!quotesList.isNullOrEmpty()) {
+                                    currentQuoteString = quotesList.first()
+                                } else {
+                                    quoteError = "No quotes found in response (list was null or empty)."
+                                }
+                            } else {
+                                quoteError = "No quotes found in response (body was null)."
+                            }
+                        } else {
+                            quoteError = "Failed to fetch quote: ${response.message()} (Code: ${response.code()})"
+                        }
+                    } catch (e: Exception) {
+                        quoteError = "An error occurred: ${e.localizedMessage ?: "Unknown error"}"
+                    } finally {
+                        isLoadingQuote = false
+                        showAboutDialog = true
+                    }
+                }
+            }
         )
 
         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
@@ -114,8 +148,20 @@ fun SettingsScreen(
     if (showAboutDialog) {
         AlertDialog(
             onDismissRequest = { showAboutDialog = false },
-            title = { Text("About PinguApp") },
-            text = { Text("Brought to you by PinguSoftware") },
+            title = { Text("Today's tip:") },
+            text = {
+                Column {
+                    if (isLoadingQuote) {
+                        Text("Thinking...")
+                    } else if (currentQuoteString != null) {
+                        Text("$currentQuoteString")
+                    } else if (quoteError != null) {
+                        Text("I don't know anything about rock, paper or scissors: $quoteError")
+                    } else {
+                        Text("Brought to you by PinguSoftware.")
+                    }
+                }
+            },
             confirmButton = {
                 TextButton(onClick = { showAboutDialog = false }) {
                     Text("OK")
