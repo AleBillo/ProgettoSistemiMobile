@@ -36,7 +36,9 @@ progettoSM/
 ├── common/
 │   ├── game/
 │   ├── login/
-│   └── permission/
+│   ├── permission/
+│   ├── rpsmodel/
+│   └── storage/
 └── feature/
     ├── camera/
     ├── scoreboard/
