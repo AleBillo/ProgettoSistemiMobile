@@ -7,6 +7,8 @@ L'app intende mettere in pratica i principi di progettazione software moderni, c
 
 ## Funzionalità principali
 
+- **Login con Google:**  
+  L'app utilizza l'integrazione delle Google Sign-In API per consentire agli utenti di accedere in modo semplice e sicuro.  
 
 - **Accesso alla fotocamera:**  
   Dopo aver ottenuto i permessi, l'app attiva la fotocamera per acquisire in tempo reale l'immagine della mano dell'utente.
@@ -138,7 +140,46 @@ Scaffold(
 
 
 #### 1. `login/`
+  La gestione del login sfrutta ora le nuove Android Credentials API e la libreria `googleid`.  
+  Il modulo `common/login` contiene la classe `GoogleSignInHandler` che incapsula tutto il flusso di autenticazione, gestendo sia il login sia eventuali errori o fallback al sign-up automatico.  
+  Esempio di utilizzo del nuovo handler:
+  ```kotlin
+  val signInHelper = GoogleSignInHandler(
+      context = context,
+      coroutineScope = coroutineScope,
+      onSignInSuccess = { credential ->
+          currentGoogleUser = credential
+      },
+      onSignInFailure = {
+          currentGoogleUser = null
+      }
+  )
 
+  // Avvio login (tipicamente su click del bottone)
+  signInHelper.signIn()
+  ```
+  Il file di configurazione `strings.xml` include ora:
+  ```xml
+  <string name="google_web_client_id">707983153911-98jolbil44r8almvqp6jibna89rvcu0k.apps.googleusercontent.com</string>
+  <string name="google_android_client_id">707983153911-t7lvsp85i88as9blcmpfnr9lrj1vvi2v.apps.googleusercontent.com</string>
+  ```
+  In SettingsScreen si trova la gestione diretta login/logout:
+  ```kotlin
+  SettingsListItem(
+      title = if (currentGoogleUser == null) "Login with Google" else "Logout",
+      icon = Icons.Filled.Person,
+      onClick = {
+          if (currentGoogleUser == null) {
+              if (context is Activity) { signInHelper.signIn() }
+          } else {
+              signInHelper.signOut()
+              currentGoogleUser = null
+          }
+      }
+  )
+  ```
+  Per vedere il codice completo del handler:  
+  [GoogleSignInHandler.kt](https://github.com/jaluspeet/ProgettoSistemiMobile/blob/main/common/login/src/main/java/com/example/common/login/GoogleSignInHandler.kt)
  
 
 #### 2. `permission/`
@@ -204,17 +245,49 @@ viewModelScope.launch(Dispatchers.IO) {
 Il progetto soddisfa il requisito delle chiamate a due o più API remote. In particolare:
 
 **1) Login Google Sign-In API**  
+L’autenticazione sfrutta ora la nuova Google Identity API, con gestione tramite Android Credentials e token ID, in modo più sicuro e compatibile con le ultime policy Google.
 
-**2) Download modello PyTorch da risorsa remota**  
-All’avvio o durante l’uso, l’app può scaricare il modello PyTorch da una risorsa remota, assicurandosi di avere la versione aggiornata del modello ML.  
-Esempio di chiamata (semplificata):
-
-```kotlin
-suspend fun fetchModel(): ModelData {
-    return apiService.downloadModelFile() // Coroutines + Retrofit/Http
-}
-```
-
+**2) OpenWeatherMap API & Quotes API**  
+Oltre ai servizi Google, ora l’app utilizza due API remote aggiuntive:
+- **Previsioni Meteo**  
+  Viene chiamata l’API di OpenWeatherMap per valutare la bontà del meteo per giocare (es. nella SettingsScreen).  
+  Esempio di uso:
+  ```kotlin
+  WeatherRetrofitClient.initialize(applicationContext)
+  val response = WeatherRetrofitClient.openWeatherApi.getCurrentWeather(
+      latitude = 44.1646677902515,
+      longitude = 12.219122156784248,
+      apiKey = WeatherRetrofitClient.API_KEY
+  )
+  if (response.isSuccessful) {
+      val weather = response.body()
+      // Usa weather per la logica/meteo UI
+  }
+  ```
+  Per la configurazione:
+  ```xml
+  <string name="openweather_api_key">5c3d1054e1674bbbe521e18b8bc975f6</string>
+  ```
+- **Quotes API**  
+  È presente un client per una Quotes API, usata per mostrare frasi a tema.  
+  Esempio di chiamata:
+  ```kotlin
+  val res = QuotesRetrofitClient.quotesApi.getQuote(prompt = "rock paper scissors")
+  if (res.isSuccessful) {
+      val quote = res.body()?.quotes?.firstOrNull()
+      // Mostra la quote nella UI
+  }
+  ```
+  Definizione API service:
+  ```kotlin
+  interface QuotesApiService {
+      @GET("json")
+      suspend fun getQuote(
+          @Query("prompt") prompt: String,
+          @Query("quotes") quotesParam: String = "array of quotes"
+      ): Response<QuotesApiResponse>
+  }
+  ```
 ---
 
 ## 6. Punti di forza
