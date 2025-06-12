@@ -7,8 +7,6 @@ L'app intende mettere in pratica i principi di progettazione software moderni, c
 
 ## Funzionalità principali
 
-- **Login con Google:**  
-  L'app utilizza l'integrazione delle Google Sign-In API per consentire agli utenti di accedere in modo semplice e sicuro.
 
 - **Accesso alla fotocamera:**  
   Dopo aver ottenuto i permessi, l'app attiva la fotocamera per acquisire in tempo reale l'immagine della mano dell'utente.
@@ -50,7 +48,7 @@ progettoSM/
 - **app/**: modulo principale, contiene MainActivity, entry point dell’applicazione, e il setup generale (tema, navigation, ecc.).
 - **common/**: contiene codice riutilizzabile e condiviso:
   - **game/**: logica del gioco (es. calcolo vincitore, rappresentazione delle mosse, modelli dati).
-  - **login/**: gestione dell’autenticazione tramite Google Sign-In.
+  - **login/**: gestione dell’autenticazione.
   - **permission/**: gestione centralizzata dei permessi di sistema, in particolare l’accesso alla fotocamera.
 - **feature/**: raccoglie tutte le funzionalità accessibili dall’utente:
   - **camera/**: gestione della fotocamera, acquisizione immagini, interfacciamento col modello ML, UI di gioco.
@@ -140,10 +138,7 @@ Scaffold(
 
 
 #### 1. `login/`
-  Questo modulo gestisce tutte le funzionalità relative all’autenticazione degli utenti, in particolare tramite Google Sign-In.
 
-  - Implementare il flusso di login con Google, gestendo la richiesta, la risposta e il salvataggio delle informazioni dell’utente autenticato.
-  - Fornire funzioni o componenti riutilizzabili per mostrare lo stato di autenticazione e gestire la sessione utente.
  
 
 #### 2. `permission/`
@@ -209,18 +204,6 @@ viewModelScope.launch(Dispatchers.IO) {
 Il progetto soddisfa il requisito delle chiamate a due o più API remote. In particolare:
 
 **1) Login Google Sign-In API**  
-Per l’autenticazione degli utenti viene sfruttata l’API remota di Google. L’utente effettua il login tramite Google Sign-In, ricevendo un token e i dati del profilo.  
-Esempio di chiamata (semplificata):
-
-```kotlin
-val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-    .requestIdToken(context.getString(R.string.default_web_client_id))
-    .requestEmail()
-    .build()
-val googleSignInClient = GoogleSignIn.getClient(context, gso)
-val signInIntent = googleSignInClient.signInIntent
-// L'activity riceve il risultato e completa la chiamata remota
-```
 
 **2) Download modello PyTorch da risorsa remota**  
 All’avvio o durante l’uso, l’app può scaricare il modello PyTorch da una risorsa remota, assicurandosi di avere la versione aggiornata del modello ML.  
